@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "locoui_cursor",
+  "version": "${version}",
+  "name": "LocoUI Cursor",
+  "description": "Moves and draws the pointer of LocoUI menus on your own client: it follows your mouse in the very frame you move it, whatever your ping. Does nothing on servers without LocoUI.",
+  "authors": ["PHYNX"],
+  "contact": {
+    "homepage": "https://phynx.app",
+    "sources": "https://github.com/kloppie74/locoui-cursormod",
+    "issues": "https://github.com/kloppie74/locoui-cursormod/issues"
+  },
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["app.phynx.locoui.cursormod.fabric.LocoCursorMod"]
+  },
+  "mixins": ["locoui_cursor.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "${mc_range}",
+    "fabric-api": "*",
+    "java": ">=${java}"
+  }
+}
