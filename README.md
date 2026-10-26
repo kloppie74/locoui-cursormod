@@ -1,4 +1,4 @@
-<img src="common/src/main/resources/assets/locoui_cursor/icon.png" alt="" width="96" align="right">
+<img src="src/common/resources/assets/locoui_cursor/icon.png" alt="" width="96" align="right">
 
 # LocoUI Cursor
 
@@ -34,9 +34,10 @@ of the HUD.
 ## How it works
 
 While LocoUI has a page with a pointer open, the mod catches the turn the game was about
-to apply to your head (`LocalPlayer.turn`, with your sensitivity, smoothing and inverted
-mouse already in it) and moves the pointer by exactly what LocoUI's server would have made
-of it. It draws the pointer on top of the HUD and tells the server where it is, so hover
+to apply to your head (`Entity.turn` of your own player, with your sensitivity, smoothing
+and inverted mouse already in it) and moves the pointer by exactly what LocoUI's server
+would have made of it. Catching it there, rather than in vanilla's mouse handler, also works
+in launchers and mods with mouse handling of their own (Lunar Client, Ixeris). It draws the pointer on top of the HUD and tells the server where it is, so hover
 and clicks use the position you see.
 
 The server stays in charge: it opens and closes the pointer, sends its picture and size,
@@ -69,25 +70,32 @@ The pointer quad is drawn white at alpha 254 — LocoUI's menu shaders leave tha
 
 ## Build
 
-Gradle 9 runs on Java 25 (Fabric Loom 1.19 needs it). The 1.21.x jars are built for Java 21,
-the 26.x jars for Java 25, so both JDKs must be installed.
+Gradle 9 runs on Java 25 (Fabric Loom 1.19 needs it), and the 1.21.x builds compile against
+Java 21, so both JDKs must be installed. All bytecode is Java 21.
 
 ```bash
 ./gradlew build
 ```
 
-The jar to ship is `build/libs/locoui-cursor-<version>.jar`, which runs on every version.
+The jar to ship lands in `versions/<mod version>/locoui-cursor-<mod version>.jar` and runs on
+every version. `versions/` is the history: one folder per released version, jars committed.
 
-Every Minecraft generation is its own subproject (`versions/<mc>`, whose `gradle.properties`
-says which Minecraft versions it runs on) and builds a jar for just those versions in
-`versions/<mc>/build/libs`. The shared code is in `common/`, and the few lines that differ
-between Minecraft versions are in `glue/<generation>/`. Each build compiles its glue into
-a package of its own (`glue.v1_21_4`, `glue.v26_3`, ...), because two builds of the same
-glue can differ in bytecode (26.3 moved `RenderPipeline` to another package). The universal
-jar carries all of them, the shared classes once (Java 21), and the mouse mixin twice: for
-1.21.x's intermediary names and for 26.x's own names. At start, `Versions.glue()` picks the
-glue for the running game from `locoui_cursor_glues.txt` and `CursorMixinPlugin` picks the
-mixin. Classes for other versions are never loaded.
+| Folder | What |
+|---|---|
+| `src/common/java` | the shared code: protocol, pointer, entrypoint, mixin plugin |
+| `src/common/mixin` | the turn mixin, compiled once per naming scheme |
+| `src/common/resources` | `fabric.mod.json`, the mixin config, the icon |
+| `src/glue/<generation>` | the few lines that differ between Minecraft versions |
+| `src/minecraft/<mc>` | one Gradle build per Minecraft generation (its `gradle.properties` says which glue, which Fabric API and which versions) |
+| `versions/<mod version>` | every released jar |
+
+Each build compiles its glue into a package of its own (`glue.v1_21_4`, `glue.v26_3`, ...),
+because two builds of the same glue can differ in bytecode (26.3 moved `RenderPipeline` to
+another package). The universal jar carries all of them, the shared classes once, and the
+turn mixin twice: for 1.21.x's intermediary names and for 26.x's own names. Both mixins are
+listed in the mixin config; `CursorMixinPlugin` drops the one whose target class the game
+does not have. At start, `Versions.glue()` picks the glue for the running game from
+`locoui_cursor_glues.txt`. Classes for other versions are never loaded.
 
 | Glue | Minecraft | Differences |
 |---|---|---|

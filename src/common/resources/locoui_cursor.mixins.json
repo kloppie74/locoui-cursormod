@@ -4,7 +4,7 @@
   "package": "app.phynx.locoui.cursormod.mixin",
   "plugin": "app.phynx.locoui.cursormod.mixin.CursorMixinPlugin",
   "compatibilityLevel": "JAVA_21",
-  "client": [],
+  "client": [${client_mixins}],
   "injectors": {
     "defaultRequire": 1
   }

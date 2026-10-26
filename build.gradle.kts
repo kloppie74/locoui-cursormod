@@ -38,7 +38,9 @@ subprojects {
         withSourcesJar()
     }
     tasks.withType<JavaCompile>().configureEach {
-        options.release.set(javaVersion)
+        // Java 21 bytecode everywhere, also where the game itself needs Java 25: the universal
+        // jar's mixin config lists the 26.x mixin on 1.21.x too, and Mixin reads every listed class.
+        options.release.set(21)
         options.encoding = "UTF-8"
     }
 
@@ -53,11 +55,11 @@ subprojects {
 
     val generateGlue = tasks.register<Sync>("generateGlue") {
         into(layout.buildDirectory.dir("generated/glue/java"))
-        from(rootProject.file("glue/$glue/java/app/phynx/locoui/cursormod/glue/current")) {
+        from(rootProject.file("src/glue/$glue/app/phynx/locoui/cursormod/glue/current")) {
             into("app/phynx/locoui/cursormod/glue/$glueId")
             filter { line: String -> line.replace("app.phynx.locoui.cursormod.glue.current", "app.phynx.locoui.cursormod.glue.$glueId") }
         }
-        from(rootProject.file("common/src/mixin/java/app/phynx/locoui/cursormod/mixin/family")) {
+        from(rootProject.file("src/common/mixin/app/phynx/locoui/cursormod/mixin/family")) {
             into("app/phynx/locoui/cursormod/mixin/$family")
             filter { line: String -> line.replace("app.phynx.locoui.cursormod.mixin.family", "app.phynx.locoui.cursormod.mixin.$family") }
         }
@@ -74,31 +76,39 @@ subprojects {
     // The shared core plus this generation's glue (glue/<name>) in its own package.
     extensions.configure<SourceSetContainer> {
         named("main") {
-            java.srcDir(rootProject.file("common/src/main/java"))
+            java.srcDir(rootProject.file("src/common/java"))
             java.srcDir(generateGlue)
-            resources.srcDir(rootProject.file("common/src/main/resources"))
+            resources.srcDir(rootProject.file("src/common/resources"))
             resources.srcDir(generateGlueTable)
         }
     }
 
     tasks.named<ProcessResources>("processResources") {
-        val props = mapOf("version" to version.toString(), "mc_range" to mcRange, "java" to javaVersion.toString())
+        val props = mapOf(
+            "version" to version.toString(), "mc_range" to mcRange, "java" to javaVersion.toString(),
+            "client_mixins" to "\"$family.PlayerTurnMixin\"",
+        )
         inputs.properties(props)
-        filesMatching("fabric.mod.json") { expand(props) }
+        filesMatching(listOf("fabric.mod.json", "locoui_cursor.mixins.json")) { expand(props) }
     }
 }
 
 // ONE JAR FOR EVERY VERSION: the shared classes once (from the 1.21.4 build: Java 21
-// bytecode), every build's glue package, both mouse mixins, and a glue table with all
-// rows. At start the mod picks the glue and the mixin for the running game.
+// bytecode), every build's glue package, both turn mixins, and a glue table with all
+// rows. At start the mod picks the glue and the mixin for the running game. The jar lands
+// in versions/<mod version>/: the history of every released jar.
 val universalBase = ":mc-1.21.4"
 
 fun finalJar(p: Project) = p.tasks.named<AbstractArchiveTask>(if (p.extra["obfuscated"] as Boolean) "remapJar" else "jar")
 
 val universalMeta = tasks.register<Sync>("universalMeta") {
     into(layout.buildDirectory.dir("generated/universal/meta"))
-    from("common/src/main/resources/fabric.mod.json") {
-        expand(mapOf("version" to modVersion, "mc_range" to universalRange, "java" to "21"))
+    from("src/common/resources") {
+        include("fabric.mod.json", "locoui_cursor.mixins.json")
+        expand(mapOf(
+            "version" to modVersion, "mc_range" to universalRange, "java" to "21",
+            "client_mixins" to "\"intermediary.PlayerTurnMixin\", \"mojang.PlayerTurnMixin\"",
+        ))
     }
 }
 
@@ -116,7 +126,7 @@ val universalJar = tasks.register<Jar>("universalJar") {
     description = "Builds locoui-cursor-<version>.jar, one jar for every supported Minecraft version."
     archiveBaseName.set("locoui-cursor")
     archiveVersion.set(modVersion)
-    destinationDirectory.set(layout.buildDirectory.dir("libs"))
+    destinationDirectory.set(layout.projectDirectory.dir("versions/$modVersion"))
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest { attributes("Implementation-Title" to "LocoUI Cursor", "Implementation-Version" to modVersion) }
     val base = project(universalBase)
@@ -125,7 +135,7 @@ val universalJar = tasks.register<Jar>("universalJar") {
         dependsOn(archive)
         from(archive.flatMap { it.archiveFile }.map { zipTree(it) }) {
             if (p == base) {
-                exclude("fabric.mod.json", "locoui_cursor_glues.txt", "META-INF/**")
+                exclude("fabric.mod.json", "locoui_cursor.mixins.json", "locoui_cursor_glues.txt", "META-INF/**")
             } else {
                 include("app/phynx/locoui/cursormod/glue/**", "app/phynx/locoui/cursormod/mixin/intermediary/**", "app/phynx/locoui/cursormod/mixin/mojang/**")
             }
