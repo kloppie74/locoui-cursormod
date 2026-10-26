@@ -1,3 +1,5 @@
+<img src="common/src/main/resources/assets/locoui_cursor/icon.png" alt="" width="96" align="right">
+
 # LocoUI Cursor
 
 A small client-side Fabric mod that makes the pointer of [LocoUI](https://phynx.app) menus instant.
@@ -19,19 +21,9 @@ by your own game, in the same frame you move the mouse — 0 ms, at any ping.
 
 1. Install [Fabric Loader](https://fabricmc.net/use/) and [Fabric API](https://modrinth.com/mod/fabric-api)
    for your Minecraft version.
-2. Download the jar for your Minecraft version from the
-   [releases](https://github.com/kloppie74/locoui-cursormod/releases) and put it in `.minecraft/mods`:
-
-   | Minecraft | Jar |
-   |---|---|
-   | 1.21.4 | `locoui-cursor-1.0.0+1.21.4.jar` |
-   | 1.21.5 | `locoui-cursor-1.0.0+1.21.5.jar` |
-   | 1.21.6 – 1.21.8 | `locoui-cursor-1.0.0+1.21.6-1.21.8.jar` |
-   | 1.21.9 – 1.21.10 | `locoui-cursor-1.0.0+1.21.9-1.21.10.jar` |
-   | 1.21.11 | `locoui-cursor-1.0.0+1.21.11.jar` |
-   | 26.1.x | `locoui-cursor-1.0.0+26.1.jar` |
-   | 26.2 | `locoui-cursor-1.0.0+26.2.jar` |
-   | 26.3 | `locoui-cursor-1.0.0+26.3.jar` |
+2. Download `locoui-cursor-<version>.jar` from the
+   [releases](https://github.com/kloppie74/locoui-cursormod/releases) and put it in `.minecraft/mods`.
+   It is one jar for every Minecraft version from 1.21.4 to 26.3.
 
 The server needs LocoUI 26.11.1 or newer. There is nothing to configure.
 
@@ -84,9 +76,18 @@ the 26.x jars for Java 25, so both JDKs must be installed.
 ./gradlew build
 ```
 
+The jar to ship is `build/libs/locoui-cursor-<version>.jar`, which runs on every version.
+
 Every Minecraft generation is its own subproject (`versions/<mc>`, whose `gradle.properties`
-says which Minecraft versions it runs on); its jar lands in `versions/<mc>/build/libs`. The shared code is in `common/`, and the few lines that differ
-between Minecraft versions are in `glue/<generation>/`:
+says which Minecraft versions it runs on) and builds a jar for just those versions in
+`versions/<mc>/build/libs`. The shared code is in `common/`, and the few lines that differ
+between Minecraft versions are in `glue/<generation>/`. Each build compiles its glue into
+a package of its own (`glue.v1_21_4`, `glue.v26_3`, ...), because two builds of the same
+glue can differ in bytecode (26.3 moved `RenderPipeline` to another package). The universal
+jar carries all of them, the shared classes once (Java 21), and the mouse mixin twice: for
+1.21.x's intermediary names and for 26.x's own names. At start, `Versions.glue()` picks the
+glue for the running game from `locoui_cursor_glues.txt` and `CursorMixinPlugin` picks the
+mixin. Classes for other versions are never loaded.
 
 | Glue | Minecraft | Differences |
 |---|---|---|

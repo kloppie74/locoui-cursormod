@@ -2,10 +2,9 @@
   "required": true,
   "minVersion": "0.8",
   "package": "app.phynx.locoui.cursormod.mixin",
+  "plugin": "app.phynx.locoui.cursormod.mixin.CursorMixinPlugin",
   "compatibilityLevel": "JAVA_21",
-  "client": [
-    "MouseHandlerMixin"
-  ],
+  "client": [],
   "injectors": {
     "defaultRequire": 1
   }

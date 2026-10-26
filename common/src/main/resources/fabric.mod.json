@@ -11,9 +11,10 @@
     "issues": "https://github.com/kloppie74/locoui-cursormod/issues"
   },
   "license": "MIT",
+  "icon": "assets/locoui_cursor/icon.png",
   "environment": "client",
   "entrypoints": {
-    "client": ["app.phynx.locoui.cursormod.fabric.LocoCursorMod"]
+    "client": ["app.phynx.locoui.cursormod.LocoCursorMod"]
   },
   "mixins": ["locoui_cursor.mixins.json"],
   "depends": {
